@@ -8,20 +8,20 @@ SFrameAnalysis is a library for sframe that defines the cycle/output types neede
 * config/
   * Folder containing sample (good) configuration xml files. Note the proper imported librarys/packages and the
   user configuration settings.
-  
+
 * include/
   * Folder containing class definition files for the cycles as well as Analysis_LinkDef.h, which must be updated
   whenever a new cycle/class is defined/added
-  
+
 * proof/
   * Folder containing implementation files for ROOT/proof
-  
+
 * src/
   * Folder containing class implementation files for the cycles/classes in this library
-  
+
 * Makefile
   * Makefile for this library
-  
+
 * MakeAnalysis.sh
   * Shell script to help with quick creation of custom cycles based on src/AnalysisCycle
 
@@ -29,4 +29,4 @@ SFrameAnalysis is a library for sframe that defines the cycle/output types neede
   * Logfile for updates/changes
 
 * README.md
-  * This file.
+test  * This file.
