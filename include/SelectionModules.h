@@ -8,7 +8,17 @@
 #include "SFrameTools/include/Selection.h"
 #include "SFrameTools/include/EventCalc.h"
 #include "SFrameTools/include/HypothesisDiscriminator.h"
+
 #include "SFrameAnalysis/include/EventFilterFromListStandAlone.h"
+
+
+#include "SFrameAnalysis/include/CMSTopTagSelectionMods.h"
+#include "SFrameAnalysis/include/JetSelectionMods.h"
+#include "SFrameAnalysis/include/LeptonSelectionMods.h"
+#include "SFrameAnalysis/include/HepSelectionMods.h"
+
+
+
 
 #include <algorithm>
 #include <memory>
@@ -28,38 +38,6 @@ private:
     double m_ptmin;
     double m_etamax;
 
-};
-
-class NAntiMuonHEPTopSelection: public SelectionModule {
-public:
-
-  NAntiMuonHEPTopSelection(int min_nbtag, int max_nbtag=int_infinity(), double ptmin=0., double etamax=double_infinity() );
-    ~NAntiMuonHEPTopSelection() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nbtag;
-    int m_max_nbtag;
-    double m_ptmin;
-    double m_etamax;
-};
-
-class NAntiMuonHEPTopSelectionMatch: public SelectionModule {
-public:
-
-  NAntiMuonHEPTopSelectionMatch(int min_nbtag, int max_nbtag=int_infinity(), double ptmin=0., double etamax=double_infinity() );
-    ~NAntiMuonHEPTopSelectionMatch() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nbtag;
-    int m_max_nbtag;
-    double m_ptmin;
-    double m_etamax;
 };
 
 class NAntiMuonSubBTagSelection: public SelectionModule {
@@ -158,10 +136,7 @@ class TopTagOverlapSelection: public SelectionModule {
  private:
   double m_delR_Lep_TopTag;
   double m_delR_Jet_TopTag;
-};
-
-
-
+}__attribute__ ((deprecated)); // moved to CMSTopTagSelectionMods.h and renamed 
 
 
 class RazorSelection: public SelectionModule {
@@ -179,71 +154,6 @@ class RazorSelection: public SelectionModule {
   HypothesisDiscriminator *m_discr;
 };
 
-
-class NMuonSelection: public SelectionModule {
-public:
-    NMuonSelection(int min_nparticle, int max_nparticle=int_infinity(), double ptmin=0., double etamax=double_infinity() );
-    ~NMuonSelection() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nparticle;
-    int m_max_nparticle;
-    double m_ptmin;
-    double m_etamax;
-};
-
-
-class NElectronSelection: public SelectionModule {
-public:
-    NElectronSelection(
-        int min_nparticle, int max_nparticle=int_infinity(),
-        double ptmin=0., double etamax=double_infinity() 
-    );
-    ~NElectronSelection() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nparticle;
-    int m_max_nparticle;
-    double m_ptmin;
-    double m_etamax;
-};
-
-class NTauSelection: public SelectionModule {
-public:
-    NTauSelection(int min_nparticle, int max_nparticle=int_infinity(),  double ptmin=0., double etamax=double_infinity());
-    ~NTauSelection() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nparticle;
-    int m_max_nparticle;
-    double m_ptmin;
-    double m_etamax;
-};
-
-
-class NJetSelection: public SelectionModule {
-public:
-    NJetSelection(int min_nparticle, int max_nparticle=int_infinity(),  double ptmin=0., double etamax=double_infinity());
-    ~NJetSelection() {};
-
-    virtual bool pass(BaseCycleContainer*);
-    virtual std::string description();
-
-private:
-    int m_min_nparticle;
-    int m_max_nparticle;
-    double m_ptmin;
-    double m_etamax;
-};
 
 class NTopJetSelection: public SelectionModule {
 public:
@@ -266,7 +176,7 @@ public:
     NPrunedJetSelection(int min_nparticle, int max_nparticle=int_infinity(),  double ptmin=0., double etamax=double_infinity());
     ~NPrunedJetSelection() {};
 
-    virtual bool pass(BaseCycleContainer*);
+     virtual bool pass(BaseCycleContainer*);
     virtual std::string description();
 
 private:
@@ -306,7 +216,7 @@ class TopTagAntiktJetSelection : public SelectionModule{
   unsigned int m_min_Jets;		   
   unsigned int m_max_Jets;   
   double m_min_distance;           
-};
+}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed 
 
 
 class NTopTagSelection: public SelectionModule {
@@ -321,20 +231,8 @@ public:
 private:
     int m_min_ntoptag;
     int m_max_ntoptag;
-};
+}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed 
 
-class NHEPTopTagSelection: public SelectionModule{
- public:
-  NHEPTopTagSelection(int min_nheptoptag, int max_nheptoptag=int_infinity());
-  ~NHEPTopTagSelection(){};
-
-  virtual bool pass(BaseCycleContainer*);
-  virtual std::string description();
-
- private:
-  int m_min_nheptoptag;
-  int m_max_nheptoptag;
-};
 
 class NBTagAntiktJetSelection: public SelectionModule{
 public:
@@ -364,8 +262,6 @@ int m_min_nsumbtags;
 int m_max_nsumbtags;
 E_BtagType m_type;
 };
-
-
 
 
 //-- Selects events with b-tagged subjet in the CMSTopTagged jets
