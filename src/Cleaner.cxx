@@ -8,8 +8,8 @@ Cleaner::Cleaner( BaseCycleContainer* input)
     m_jec_unc = NULL;
     m_jecvar = e_Default;
     m_jervar = e_Default;
+    //m_TER_unc=NULL;
     m_subjervar = e_Default;
-
 }
 
 Cleaner::Cleaner()
@@ -20,8 +20,8 @@ Cleaner::Cleaner()
     m_jec_unc = NULL;
     m_jecvar = e_Default;
     m_jervar = e_Default;
+    m_TERvar= e_Default;
     m_subjervar = e_Default;
-
 }
 
 void Cleaner::resetEventCalc()
@@ -127,6 +127,103 @@ void Cleaner::JetEnergyResolutionShifter(bool sort)
     resetEventCalc();
 }
 
+void Cleaner::JetEnergyResolutionShifterFat(bool sort)
+{
+  
+  //cout <<"in Jet energy resolution shifter"<<endl;
+  
+  for(unsigned int i=0; i<bcc->topjets->size(); ++i) {
+    
+    TopJet topjet = bcc->topjets->at(i);
+    
+    double deltarmin = double_infinity();
+    
+    GenTopJet nextjet;
+    
+    for(unsigned int igj=0; igj<bcc->topjetsgen->size();++igj){
+      
+      GenTopJet checkgen=bcc->topjetsgen->at(igj);
+      
+      if(checkgen.deltaR(topjet) < deltarmin){
+	deltarmin = checkgen.deltaR(topjet);
+	nextjet = checkgen;
+      }
+      
+    }//loop over genjets
+    
+    if(deltarmin>0.8){
+      continue;
+    }
+    
+    if(nextjet.pt()<15.0){
+      continue;
+    }
+    
+    float genpt = nextjet.pt();
+
+    LorentzVector jet_v4 =  bcc->topjets->at(i).v4();
+
+    LorentzVector jet_v4_raw = jet_v4*bcc->topjets->at(i).JEC_factor_raw();
+
+    double recopt = jet_v4.pt();
+    double factor = 0.0;
+    double uperr = 0.0;
+    double downerr = 0.0;
+    double abseta = fabs(jet_v4.eta());
+    
+    //numbers taken from https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution
+    if(m_fatjervar==e_Default) {
+      //cout <<"in Default"<<endl;
+      if(abseta < 0.5)
+	factor = 0.052;
+      else if(abseta >= 0.5 && abseta <1.1)
+	factor = 0.057;
+      else if(abseta >= 1.1 && abseta <1.7)
+	factor = 0.096;
+      else if(abseta >= 1.7 && abseta <2.3)
+	factor = 0.134;
+      else if(abseta >= 2.3)
+	factor = 0.288;
+      else
+	factor = 0.288;
+    } else if(m_fatjervar==e_Up) {
+      // cout <<"in JER Up"<<endl;
+      if(abseta < 0.5)
+	factor = 0.115;
+      else if(abseta >= 0.5 && abseta <1.1)
+	factor = 0.114;
+      else if(abseta >= 1.1 && abseta <1.7)
+	factor = 0.161;
+      else if(abseta >= 1.7 && abseta <2.3)
+	factor = 0.228;
+      else if(abseta >= 2.3)
+	factor = 0.488;
+    } else if(m_fatjervar==e_Down) {
+      //  cout <<"in JER Down"<<endl;
+      if(abseta < 0.5)
+	factor = -0.01;
+      else if(abseta >= 0.5 && abseta <1.1)
+	factor = 0.00;
+      else if(abseta >= 1.1 && abseta <1.7)
+	factor = 0.032;
+      else if(abseta >= 1.7 && abseta <2.3)
+	factor = 0.042;
+      else if(abseta >= 2.3)
+	factor = 0.089;
+    }
+    
+    double ptscale = std::max(0.0, 1 + factor * (recopt - genpt) / recopt);
+    
+    jet_v4*=ptscale;
+    
+    bcc->topjets->at(i).set_v4(jet_v4);
+    
+  }
+  
+  if(sort) std::sort(bcc->topjets->begin(), bcc->topjets->end(), HigherPt());
+  resetEventCalc();
+}
+
 void Cleaner::JetEnergyResolutionShifterSubjets(bool sort)
 {
  
@@ -194,6 +291,15 @@ void Cleaner::JetEnergyResolutionShifterSubjets(bool sort)
       float genpt = nextsubjet.pt();
       //ignore unmatched jets (which have zero vector) or jets with very low pt:
       if(genpt < 15.0) {
+	Particle newsubjet;
+
+        newsubjet.set_pt(subjets_top[i].pt());
+        newsubjet.set_eta(subjets_top[i].eta());
+        newsubjet.set_phi(subjets_top[i].phi());
+        newsubjet.set_energy(subjets_top[i].energy());
+
+        bcc->topjets->at(j).add_subjet(newsubjet);
+
 	//   std::cout << "1.0 | " <<  bcc->jets->at(i).pt()  << " | " << bcc->jets->at(i).eta() << " | " << genpt << std::endl;
 	continue;
       }
@@ -441,12 +547,11 @@ void Cleaner::JetRecorrector( FactorizedJetCorrector *corrector, bool sort, bool
 	  jet_v4_corrected = jet_v4_raw * correctionfactor;
 	}
 	
-	
-	// see https://twiki.cern.ch/twiki/bin/view/CMS/METType1Type2Formulae : we add the old corrected jet and 
         // subtract the new corrected (smeared) jet v4 from/to MET, if the corrected pt is > 10GeV.
         // Note that this implementation does not do exactly the same as re-applying typeI corrections of the new corrected jets to raw met as it does not
         // consider the cases in which the new corrections makes some jets flip-flop over the pt = 10GeV threshold used in the typeI-met correction.
         // To consider that, we would need the pure L1 corrected jet here as well ...
+
 	if(propagate_to_met){
             if(jets.at(i)->v4().Pt() > 10){
                 LorentzVector metv4 = bcc->met->v4();
@@ -469,6 +574,57 @@ void Cleaner::JetRecorrector( FactorizedJetCorrector *corrector, bool sort, bool
     }
     resetEventCalc();
 }
+
+
+ void Cleaner::TauEnergyResolutionShifter()
+ {
+    double factor = 0.0;
+    if (m_TERvar==e_Default) 
+       {
+          factor = 0.0;
+         }
+       else 
+      {
+        if (m_TERvar==e_Down) 
+           {
+              factor = -0.1;
+             }
+        if (m_TERvar==e_Up) 
+           {
+              factor = +0.1;
+           }
+      }
+    for(unsigned int i=0; i<bcc->taus->size(); ++i) {
+         Tau tau = bcc->taus->at(i);
+         double genpt = 0;
+         double recopt = 0;
+         bool RealTau = false;
+          for(unsigned int j=0; j<bcc->genparticles->size(); ++j)
+             {
+                GenParticle genp = bcc->genparticles->at(j);
+                double deltaR = genp.deltaR(tau);
+                if (deltaR < 0.5 && abs(genp.pdgId())==15)  
+                   {
+                      genpt = genp.pt();
+                      recopt = tau.pt();
+                      RealTau = true;
+                      break;
+                   }
+             }
+          if (RealTau)
+             {
+                LorentzVector tau_v4 =  bcc->taus->at(i).v4();
+                double ptscale = std::max(0.0, 1 + factor * (recopt - genpt) / recopt);
+                tau_v4*=ptscale;
+                bcc->taus->at(i).set_v4(tau_v4);
+             }
+          std::sort(bcc->taus->begin(), bcc->taus->end(), HigherPt());
+      }
+ }
+
+
+
+
 
 
 
@@ -711,75 +867,75 @@ void Cleaner::MuonCleaner_Loose(double ptmin, double etamax)
 
 void Cleaner::MuonCleanerHalil(double ptmin, double etamax, double relisomax)
 {
-  std::vector<Muon> good_mus;
-  for(unsigned int i=0; i<bcc->muons->size(); ++i) {
-    Muon mu = bcc->muons->at(i);
-    if(mu.pt()>ptmin) {
-      if(fabs(mu.eta())<etamax){
-        if(mu.isGlobalMuon()) {
-	  if(mu.isPFMuon()) {
-	    if(mu.globalTrack_chi2()/mu.globalTrack_ndof()<10) {
-	      if(mu.globalTrack_numberOfValidMuonHits()>0) {
-		if(mu.innerTrack_trackerLayersWithMeasurement()>5) {
-		  if(mu.dB()<0.2) { 
-		    if(fabs(mu.vertex_z()-bcc->pvs->at(0).z())<0.5) {
-		      if(mu.innerTrack_numberOfValidPixelHits()>0) {
-			if(mu.numberOfMatchedStations()>1) {
-			  if(mu.relIso()<relisomax){
-			    good_mus.push_back(mu);
-			  }
-			}
-		      }
-		    }
-		  }
-		}
-	      }
-	    }
-	  }
-        }
+   std::vector<Muon> good_mus;
+   for(unsigned int i=0; i<bcc->muons->size(); ++i) {
+      Muon mu = bcc->muons->at(i);
+      if(mu.pt()>ptmin) {
+         if(fabs(mu.eta())<etamax){
+            if(mu.isGlobalMuon()) {
+               if(mu.isPFMuon()) {
+                  if(mu.globalTrack_chi2()/mu.globalTrack_ndof()<10) {
+                     if(mu.globalTrack_numberOfValidMuonHits()>0) {
+                        if(mu.innerTrack_trackerLayersWithMeasurement()>5) {
+                           if(mu.dB()<0.2) { 
+                              if(fabs(mu.vertex_z()-bcc->pvs->at(0).z())<0.5) {
+                                 if(mu.innerTrack_numberOfValidPixelHits()>0) {
+                                    if(mu.numberOfMatchedStations()>1) {
+                                       if(mu.relIso()<relisomax){
+                                          good_mus.push_back(mu);
+                                       }
+                                    }
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
       }
-    }
-  }
-    bcc->muons->clear();
+   }
+   bcc->muons->clear();
 
-    for(unsigned int i=0; i<good_mus.size(); ++i) {
-        bcc->muons->push_back(good_mus[i]);
-    }
-    sort(bcc->muons->begin(), bcc->muons->end(), HigherPt());
-    resetEventCalc();
+   for(unsigned int i=0; i<good_mus.size(); ++i) {
+      bcc->muons->push_back(good_mus[i]);
+   }
+   sort(bcc->muons->begin(), bcc->muons->end(), HigherPt());
+   resetEventCalc();
 }
 
 
 
 void Cleaner::TauCleaner_noIso(double ptmin, double etamax)
 {
-  std::vector<Tau> good_taus;
-  for(unsigned int i=0; i<bcc->taus->size(); ++i) {
-    Tau tau = bcc->taus->at(i);
-    if(tau.pt()>ptmin) {
-      if(fabs(tau.eta())<etamax) {
-	if(bcc->taus->at(i).decayModeFinding()) {
-	  if(bcc->taus->at(i).againstElectronTightMVA3()) {
-	    if(bcc->taus->at(i).againstMuonTight2()) {
-	      double deltaRmin = 100;
-	      for(unsigned int k=0; k<bcc->muons->size(); ++k) 
-		{
-		  Muon muon = bcc->muons->at(k);
-		  double deltaR = muon.deltaR(tau);
-		  if (deltaR < deltaRmin) deltaRmin = deltaR;
-		}
-	      if (deltaRmin > 0.5)
-		{
-		  good_taus.push_back(tau);
-		}
-	    }
-	  }
-	}
+   std::vector<Tau> good_taus;
+   for(unsigned int i=0; i<bcc->taus->size(); ++i) {
+      Tau tau = bcc->taus->at(i);
+      if(tau.pt()>ptmin) {
+         if(fabs(tau.eta())<etamax) {
+            if(bcc->taus->at(i).decayModeFinding()) {
+               if(bcc->taus->at(i).againstElectronTightMVA3()) {
+                  if(bcc->taus->at(i).againstMuonTight2()) {
+                     double deltaRmin = 100;
+                     for(unsigned int k=0; k<bcc->muons->size(); ++k) 
+                        {
+                           Muon muon = bcc->muons->at(k);
+                           double deltaR = muon.deltaR(tau);
+                           if (deltaR < deltaRmin) deltaRmin = deltaR;
+                        }
+                     if (deltaRmin > 0.5)
+                        {
+                           good_taus.push_back(tau);
+                        }
+                  }
+               }
+            }
+         }
       }
-    }
-  }
+   }
   
-  bcc->taus->clear();
+   bcc->taus->clear();
   
   for(unsigned int i=0; i<good_taus.size(); ++i) {
     bcc->taus->push_back(good_taus[i]);
@@ -812,32 +968,32 @@ void Cleaner::TauCleaner(double ptmin, double etamax)
 
 void Cleaner::TauCleanerHalil(double ptmin, double etamax)
 {
-  std::vector<Tau> good_taus;
-  for(unsigned int i=0; i<bcc->taus->size(); ++i) {
-    Tau tau = bcc->taus->at(i);
-    if(tau.pt()>ptmin) {
-      if(fabs(tau.eta())<etamax) {
-	if(bcc->taus->at(i).decayModeFinding()) {
-	  if(bcc->taus->at(i).againstElectronTightMVA3()) {
-	    if(bcc->taus->at(i).againstMuonTight2()) {
-	      if (bcc->taus->at(i).byTightCombinedIsolationDeltaBetaCorr3Hits())
-		{
-		  good_taus.push_back(tau);
-		}
-	    }
-	  }
-	}
+   std::vector<Tau> good_taus;
+   for(unsigned int i=0; i<bcc->taus->size(); ++i) {
+      Tau tau = bcc->taus->at(i);
+      if(tau.pt()>ptmin) {
+         if(fabs(tau.eta())<etamax) {
+            if(bcc->taus->at(i).decayModeFinding()) {
+               if(bcc->taus->at(i).againstElectronTightMVA3()) {
+                  if(bcc->taus->at(i).againstMuonTight2()) {
+                     if (bcc->taus->at(i).byTightCombinedIsolationDeltaBetaCorr3Hits())
+                        {
+                           good_taus.push_back(tau);
+                        }
+                  }
+               }
+            }
+         }
       }
-    }
-  }
+   }
   
-  bcc->taus->clear();
+   bcc->taus->clear();
   
-  for(unsigned int i=0; i<good_taus.size(); ++i) {
-    bcc->taus->push_back(good_taus[i]);
-  }
-  sort(bcc->taus->begin(), bcc->taus->end(), HigherPt());
-  resetEventCalc();
+   for(unsigned int i=0; i<good_taus.size(); ++i) {
+      bcc->taus->push_back(good_taus[i]);
+   }
+   sort(bcc->taus->begin(), bcc->taus->end(), HigherPt());
+   resetEventCalc();
 }
 
 void Cleaner::JetCleaner(double ptmin, double etamax, bool doPFID)

@@ -35,12 +35,15 @@ class Cleaner{
    * Use sort=true if you want to re-order the jets according to corrected pt after the applied shifts.
   */
   void JetEnergyResolutionShifter(bool sort=true);
+ void JetEnergyResolutionShifterFat(bool sort=true);
   void JetEnergyResolutionShifterSubjets(bool sort=true);
   /**
    * Function to subtract lepton momenta from jets if the distance between jet and lepton axis is less than 0.5 in the eta-phi plane.
    * All jets and leptons in the actual BaseCycleContainer are considered.
    * Use sort=false or sort=true if you want to re-order the jets according to corrected pt after the applied shifts.
   */
+   void TauEnergyResolutionShifter();
+   
   void JetLeptonSubtractor(FactorizedJetCorrector *corrector, bool sort=true);
 
   /**
@@ -86,7 +89,11 @@ class Cleaner{
   /**
    * Do not apply jet energy resolution variation.
    */
-  void NoJERVariation(){m_jervar=e_Default;}
+   void NoJERVariation(){m_jervar=e_Default;}
+   
+   void ApplyTERVariationUp(){m_TERvar=e_Up;}
+   void ApplyTERVariationDown(){m_TERvar=e_Down;}
+   void NoTERVariation(){m_TERvar=e_Default;}
 
   void ApplysubJERVariationUp(){m_subjervar=e_Up;}
   /**
@@ -97,6 +104,16 @@ class Cleaner{
    * Do not apply jet energy resolution variation.
    */
   void NosubJERVariation(){m_subjervar=e_Default;}
+
+  void ApplyfatJERVariationUp(){m_fatjervar=e_Up;}
+  /**
+   * Apply a down variation of the jet energy resolution uncertainty.
+  */
+  void ApplyfatJERVariationDown(){m_fatjervar=e_Down;}
+  /**
+   * Do not apply jet energy resolution variation.
+   */
+  void NofatJERVariation(){m_fatjervar=e_Default;}
 
   E_SystShift GetJECVariation(){return m_jecvar;}
 
@@ -116,7 +133,8 @@ class Cleaner{
   void TopJetCleaner(double ptmin=0, double etamax=9999, bool doPFID=true);
   void JetLeptonOverlapRemoval();
   void PrimaryVertexCleaner(int ndofmax=4, double zmax=24.0, double rhomax=2.0);
-  
+   // void DoUpVarTER(bool f=true){m_TER_unc=true; m_syst_shift=e_Up;}
+   //void DoDownVarTER(bool f=true){m_TER_unc=true; m_syst_shift=e_Down;}
   /**
    * Function to correct phi modulation of MET in data
   */
@@ -130,8 +148,12 @@ class Cleaner{
 
   E_SystShift m_jecvar;  
   E_SystShift m_jervar;
+  E_SystShift m_syst_shift;
+  E_SystShift m_TERvar; 
+   
 
   E_SystShift m_subjervar;
+  E_SystShift m_fatjervar;
 
   // helper function to define electron id criteria.
   bool passElectronId(BaseCycleContainer*, unsigned int);
