@@ -55,7 +55,7 @@ class TopTagOverlapSelection: public SelectionModule {
  private:
   double m_delR_Lep_TopTag;
   double m_delR_Jet_TopTag;
-}__attribute__ ((deprecated)); // moved to CMSTopTagSelectionMods.h and renamed 
+}__attribute__ ((deprecated)); // moved to CMSTopTagSelectionMods.h and renamed
 
 
 class RazorSelection: public SelectionModule {
@@ -113,11 +113,11 @@ class CAAntiktJetSelection : public SelectionModule{
   virtual std::string description();
 
  private:
-  unsigned int m_min_Topjets; 		   
+  unsigned int m_min_Topjets;
   unsigned int m_max_Topjets;
-  unsigned int m_min_Jets;		   
-  unsigned int m_max_Jets;   
-  double m_min_distance;           
+  unsigned int m_min_Jets;
+  unsigned int m_max_Jets;
+  double m_min_distance;
 };
 
 class TopTagAntiktJetSelection : public SelectionModule{
@@ -128,17 +128,17 @@ class TopTagAntiktJetSelection : public SelectionModule{
   virtual std::string description();
 
  private:
-  unsigned int m_min_TopTag; 		   
+  unsigned int m_min_TopTag;
   unsigned int m_max_TopTag;
-  unsigned int m_min_Jets;		   
-  unsigned int m_max_Jets;   
-  double m_min_distance;           
-}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed 
+  unsigned int m_min_Jets;
+  unsigned int m_max_Jets;
+  double m_min_distance;
+}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed
 
 
 class NTopTagSelection: public SelectionModule {
 public:
-    NTopTagSelection(int min_ntoptag, int max_ntoptag=int_infinity());
+    NTopTagSelection(int min_ntoptag, int max_ntoptag=int_infinity(), double min_pt=0.0, double nsubjettiness_max=double_infinity());
     ~NTopTagSelection() {};
 
 
@@ -148,7 +148,9 @@ public:
 private:
     int m_min_ntoptag;
     int m_max_ntoptag;
-}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed 
+    double m_nsubjettiness_max;
+    double m_pt_min;
+}__attribute__ ((deprecated)); //moved to CMSTopTagSelectionMods.h and renamed
 
 
 // Selects events with b-tagged subjet in the HEPTopTagged jets
@@ -455,7 +457,7 @@ public:
    virtual bool pass(BaseCycleContainer*);
    virtual std::string description();
 
-private:  
+private:
 
 };
 

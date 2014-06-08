@@ -1,4 +1,4 @@
-//---sframe new---- 
+//---sframe new----
 #include "include/SelectionModules.h"
 #include "TLorentzVector.h"
 
@@ -43,7 +43,7 @@ bool TopTagOverlapSelection::pass(BaseCycleContainer* bcc)
   //find primary charged lepton
   EventCalc* calc = EventCalc::Instance();
   Particle* lepton = calc->GetPrimaryLepton();
-  
+
   for(unsigned int i = 0; i< bcc->topjets->size();++i){
     TopJet topjet = bcc->topjets->at(i);
     if(TopTag(topjet,mjet,nsubjets,mmin) &&  m_delR_Lep_TopTag < topjet.deltaR(*lepton)){
@@ -70,17 +70,17 @@ RazorSelection::RazorSelection(HypothesisDiscriminator *discr, double mrazor, do
   m_mrazor=mrazor;
   m_mrazorT=mrazorT;
   m_discr=discr;
- 
+
 }
 
 bool RazorSelection::pass(BaseCycleContainer* bcc)
 {
   ReconstructionHypothesis* hyp = m_discr->GetBestHypothesis();
- 
+
   LorentzVector toplep;
-  LorentzVector tophad; 
+  LorentzVector tophad;
   TVector3 phadT;
-  TVector3 pwlepT; 
+  TVector3 pwlepT;
   Particle wlep;
 
   wlep.set_v4(hyp->wlep_v4());
@@ -93,7 +93,7 @@ bool RazorSelection::pass(BaseCycleContainer* bcc)
 
 
 
-  TVector3 met3Vec; 
+  TVector3 met3Vec;
   met3Vec.SetPtEtaPhi(bcc->met->pt(),0,bcc->met->phi());
 
   double mrT = sqrt(bcc->met->pt()*(wlep.pt()+tophad.pt())- met3Vec*(pwlepT+phadT));
@@ -124,11 +124,11 @@ NTopJetSelection::NTopJetSelection(int min_nparticle, int max_nparticle, double 
 
 
 CAAntiktJetSelection::CAAntiktJetSelection(unsigned int min_Topjets, unsigned  int min_Jets, double min_distance, unsigned int max_Topjets, unsigned int max_Jets){
-  m_min_Topjets=min_Topjets; 
+  m_min_Topjets=min_Topjets;
   m_max_Topjets=max_Topjets;
   m_min_Jets=min_Jets;
   m_max_Jets=max_Jets;
-  m_min_distance=min_distance;             
+  m_min_distance=min_distance;
 }
 
 bool CAAntiktJetSelection::pass(BaseCycleContainer *bcc){
@@ -139,7 +139,7 @@ bool CAAntiktJetSelection::pass(BaseCycleContainer *bcc){
     for(unsigned int i=0; i< bcc->topjets->size(); ++i){
       TopJet topjet =  bcc->topjets->at(i);
       if(topjet.deltaR(bcc->muons->at(0))> m_min_distance)return true;
-    }    
+    }
   return false;
 }
 
@@ -150,11 +150,11 @@ std::string CAAntiktJetSelection::description(){
 }
 
 TopTagAntiktJetSelection::TopTagAntiktJetSelection(unsigned int min_TopTag, unsigned  int min_Jets, double min_distance, unsigned int max_TopTag, unsigned int max_Jets){
-  m_min_TopTag=min_TopTag; 
+  m_min_TopTag=min_TopTag;
   m_max_TopTag=max_TopTag;
   m_min_Jets=min_Jets;
   m_max_Jets=max_Jets;
-  m_min_distance=min_distance;             
+  m_min_distance=min_distance;
 }
 
 bool TopTagAntiktJetSelection::pass(BaseCycleContainer *bcc){
@@ -178,13 +178,13 @@ bool TopTagAntiktJetSelection::pass(BaseCycleContainer *bcc){
     }
     if(TopTag(topjet,mjet,nsubjets,mmin)) nTopTags++;
   }
-   
+
   if(nTopTags < m_min_TopTag || nTopTags > m_max_TopTag) return false;
 
-  
+
   for(unsigned int p=0; p< bcc->jets->size(); ++p){
     Jet antiktjet = bcc->jets->at(p);
-    if(top_had.deltaR(antiktjet)> m_min_distance) return true; 
+    if(top_had.deltaR(antiktjet)> m_min_distance) return true;
   }
 
   return false;
@@ -240,10 +240,12 @@ std::string NPrunedJetSelection::description()
 }
 
 
-NTopTagSelection::NTopTagSelection(int min_ntoptag, int max_ntoptag)
+NTopTagSelection::NTopTagSelection(int min_ntoptag, int max_ntoptag, double pt_min, double n_subjettiness)
 {
     m_min_ntoptag=min_ntoptag;
     m_max_ntoptag=max_ntoptag;
+    m_pt_min=pt_min;
+    m_nsubjettiness_max=n_subjettiness;
 }
 
 bool NTopTagSelection::pass(BaseCycleContainer *bcc)
@@ -253,6 +255,11 @@ bool NTopTagSelection::pass(BaseCycleContainer *bcc)
 
     for(unsigned int i=0; i< bcc->topjets->size(); ++i) {
         TopJet & topjet =  bcc->topjets->at(i);
+        if(topjet.pt() <= m_pt_min)
+            continue;
+        if(topjet.tau2() == 0) continue;
+        if(topjet.tau3()/topjet.tau2() >= m_nsubjettiness_max)
+            continue;
         double mmin=0;
         double mjet=0;
         int nsubjets=0;
@@ -277,14 +284,14 @@ std::string NTopTagSelection::description()
 NHEPTopAndSubBTagSelection::NHEPTopAndSubBTagSelection(int min_nheptoptag, int max_nheptoptag, E_BtagType type,  TString mode, TString filename){
 
   m_min_nheptoptag = min_nheptoptag;
-  m_max_nheptoptag = max_nheptoptag; 
+  m_max_nheptoptag = max_nheptoptag;
   m_type = type;
  m_mode = mode;
   m_filename = filename;
 }
 
 bool NHEPTopAndSubBTagSelection::pass(BaseCycleContainer *bcc){
-  int nheptoptag=0;  
+  int nheptoptag=0;
   double ptcut=150;
   for(unsigned int i=0; i< bcc->topjets->size(); ++i){
     if(bcc->topjets->at(i).pt()<ptcut) continue;
@@ -334,7 +341,7 @@ std::string NHEPTopAndSubBTagSelection::description(){
 //   }
 
 // if (nheptoptag ==0) return false;
-// if (nhiggstag == 0) return false; 
+// if (nhiggstag == 0) return false;
 // if(nheptoptag == 1 && nhiggstag == 1 && topTaggedJets[0] == HiggsTaggedJets[0]) return false;
 // return true;
 
@@ -392,7 +399,7 @@ bool HEPTopAndSubBTagPlusOtherHiggsTag::pass(BaseCycleContainer *bcc){
   }
 
 if (nheptoptag ==0) return false;
-if (nhiggstag == 0) return false; 
+if (nhiggstag == 0) return false;
 if(nheptoptag == 1 && nhiggstag == 1 && topTaggedJets[0] == HiggsTaggedJets[0]) return false;
 return true;
 
@@ -537,7 +544,7 @@ bool InvertedTopTagRegularBTagFullyInvertedHiggsTag::pass(BaseCycleContainer *bc
    if(nheptoptag == 1 && topTaggedJets[0] == HiggsTaggedJets[0]) return true;// there is only one top-tagged jet and this jet can also be higgs-tagged, which is ok
     else return false;
   }
- 
+
 if (nhiggstag > 1) return false;
 if (nheptoptag == 0) return false;
 return true;
@@ -640,8 +647,8 @@ m_iso = iso_num;
 bool IsoConeSelection::pass(BaseCycleContainer *bcc){
 double pt;
 Particle particle;
-//needs adaptation for the electron channel 
-if(m_type.Contains("mu")||m_type.Contains("Mu")){  
+//needs adaptation for the electron channel
+if(m_type.Contains("mu")||m_type.Contains("Mu")){
    pt = bcc->muons->at(0).pt();
    particle = bcc->muons->at(0);
 }
@@ -649,9 +656,9 @@ else{
 return false;
 }
 
-double radius = m_a/(pt+m_b)+m_c; 
+double radius = m_a/(pt+m_b)+m_c;
 if(radius <0.02) radius = 0.02;
-double value = relIso(EventCalc::Instance(),particle,radius); 
+double value = relIso(EventCalc::Instance(),particle,radius);
 if(relIso(EventCalc::Instance(),particle,0.4) < 0.2) return true;
 return  value < m_iso? true : false;
 }
@@ -926,21 +933,21 @@ bool EventFlavorSelection::pass(BaseCycleContainer *bcc)
         else
             counter[flavor] = counter[flavor] + 1;
     }
-    
+
     // std::cout << std::endl;
 
-    if (m_flavor == e_BFlavor && 
+    if (m_flavor == e_BFlavor &&
         counter.find(5) != counter.end()) {
         // std::cout << "It is a BFlavor event." << std::endl;
         return true;
     }
-    if (m_flavor == e_CFlavor && 
+    if (m_flavor == e_CFlavor &&
         counter.find(5) == counter.end() &&
         counter.find(4) != counter.end()) {
         // std::cout << "It is a CFlavor event." << std::endl;
         return true;
     }
-    if (m_flavor == e_LFlavor && 
+    if (m_flavor == e_LFlavor &&
         counter.find(5) == counter.end() &&
         counter.find(4) == counter.end()) {
         // std::cout << "It is a LFlavor event." << std::endl;
