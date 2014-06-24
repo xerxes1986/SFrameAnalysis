@@ -876,7 +876,7 @@ void AnalysisCycle::ExecuteEvent( const SInputData&, Double_t weight) throw( SEr
         }
 	//pdf re-weighting for systematics
 	if(m_pdfweights){
-	  calc->ProduceWeight(m_pdfweights->GetWeight(m_pdf_index));
+	  calc->ProduceWeight(m_pdfweights->GetWeight());
 	}
 
 	//fill pointers to genjet
